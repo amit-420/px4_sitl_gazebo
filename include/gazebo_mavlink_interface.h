@@ -167,6 +167,9 @@ private:
   std::vector<common::PID> pids_;
   std::vector<double> joint_max_errors_;
 
+  // changes for indi
+  std::vector<physics::JointPtr> rotor_joints_;
+
   /// \brief Pointer to the update event connection.
   event::ConnectionPtr updateConnection_;
   event::ConnectionPtr sigIntConnection_;
@@ -189,6 +192,9 @@ private:
   void handle_control(double _dt);
   bool IsRunning();
   void onSigInt();
+
+  // changes for indi
+  void sendMotorspeeds();
 
   /**
    * @brief Set the MAV_SENSOR_ORIENTATION enum value based on the sensor orientation

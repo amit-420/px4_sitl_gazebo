@@ -197,6 +197,7 @@ void GazeboMavlinkInterface::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf
   }
 
   if (_sdf->HasElement("protocol_version")) {
+    // gzmsg << "protocol version exists\n";
     protocol_version_ = _sdf->GetElement("protocol_version")->Get<float>();
   }
 
@@ -608,6 +609,27 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo&  /*_info*/) {
 
   handle_control(dt);
 
+  // changes for indi
+  // storing rotor_joints pointer
+  rotor_joints_.clear();
+  
+  int num_rotors = 4; 
+
+  for (int i = 0; i < num_rotors; i++) {
+    
+      std::string joint_name = "prop_" + std::to_string(i) + "_joint";
+      
+      physics::JointPtr joint = model_->GetJoint(joint_name);
+      
+      if (joint) {
+          rotor_joints_.push_back(joint);
+          // gzmsg << "Rotor added : " << joint_name << "\n";
+      } else {
+          gzwarn << "Failed to add joint: " << joint_name << "\n";
+      }
+  }
+  sendMotorspeeds();
+
   if (received_first_actuator_) {
     mav_msgs::msgs::CommandMotorSpeed turning_velocities_msg;
 
@@ -991,6 +1013,7 @@ void GazeboMavlinkInterface::VisionCallback(OdomPtr& odom_message) {
 
   // Only sends ODOMETRY msgs if send_odometry is set and the protocol version is 2.0
   if (send_odometry_ && protocol_version_ == 2.0) {
+    // gzmsg << " protocol version 2.0 sending odometry message: ";
     // send ODOMETRY Mavlink msg
     mavlink_odometry_t odom;
 
@@ -1194,6 +1217,63 @@ void GazeboMavlinkInterface::handle_control(double _dt)
       }
     }
   }
+}
+
+void GazeboMavlinkInterface::sendMotorspeeds()
+{
+  
+  mavlink_esc_status_t esc_status = {};
+
+  #if GAZEBO_MAJOR_VERSION >= 9
+      esc_status.time_usec = std::llround(world_->SimTime().Double() * 1e6);
+  #else
+      esc_status.time_usec = std::llround(world_->GetSimTime().Double() * 1e6);
+  #endif
+
+  int max_escs = sizeof(esc_status.rpm) / sizeof(esc_status.rpm[0]);
+
+  for (int i = 0; i < rotor_joints_.size() && i < max_escs; i++) {
+      if (rotor_joints_[i]) {
+          // Convert to RPM: (rad/s) * (60 / 2pi)
+          double rad_s = rotor_joints_[i]->GetVelocity(0);
+          esc_status.rpm[i] = (int32_t)(rad_s * 9.54929658551);
+
+      } else {
+          esc_status.rpm[i] = 0;
+      }
+  }
+
+  // gzmsg << "send motor speeds  function running velocity: " << esc_status.rpm[0]  << " " << esc_status.rpm[1] << " " << esc_status.rpm[2]  << " " << esc_status.rpm[3] << "\n";
+  mavlink_message_t msg;
+  mavlink_msg_esc_status_encode_chan(1, 200, MAVLINK_COMM_0, &msg, &esc_status);
+  mavlink_interface_->send_mavlink_message(&msg);
+
+  // static double last_print_time = 0;
+  // #if GAZEBO_MAJOR_VERSION >= 9
+  //   double current_time = world_->SimTime().Double();
+  // #else
+  //   double current_time = world_->GetSimTime().Double();
+  // #endif
+
+  // if (current_time - last_print_time > 2.0) {
+  //     mavlink_statustext_t status_text = {};
+  //     status_text.severity = MAV_SEVERITY_INFO;
+      
+  //     // Copy string safely
+  //     std::string text = "GAZEBO TCP LINK: ACTIVE";
+  //     strncpy(status_text.text, text.c_str(), sizeof(status_text.text));
+  //     status_text.text[sizeof(status_text.text)-1] = '\0'; // Ensure null term
+
+  //     // Encode as System ID 2
+  //     mavlink_msg_statustext_encode_chan(2, 200, MAVLINK_COMM_0, &msg, &status_text);
+  //     mavlink_interface_->send_mavlink_message(&msg);
+
+  //     // Print to Gazebo console so you know it tried to send
+  //     // gzmsg << "[DEBUG] Sent 'GAZEBO TCP LINK: ACTIVE' to PX4\n";
+      
+  //     last_print_time = current_time;
+  // }
+
 }
 
 bool GazeboMavlinkInterface::IsRunning()

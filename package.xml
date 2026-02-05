@@ -25,13 +25,15 @@
   <depend>protobuf-dev</depend>
   <depend>geometry_msgs</depend>
   <depend>libopencv-dev</depend>
-  <depend>mavlink</depend>
+  <!-- <depend>mavlink</depend> -->
   <depend>mavros</depend>
   <depend>mavros_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>roscpp</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
+  <build_depend>mavlink</build_depend>
+  <exec_depend>mavlink</exec_depend>
 
   <export>
     <gazebo_ros plugin_path="${prefix}/lib" gazebo_media_path="${prefix}" gazebo_model_path="${prefix}/models"/>
