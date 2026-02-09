@@ -56,6 +56,7 @@ void GazeboMotorModel::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   joint_ = model_->GetJoint(joint_name_);
   if (joint_ == NULL)
     gzthrow("[gazebo_motor_model] Couldn't find specified joint \"" << joint_name_ << "\".");
+  gzmsg << " joint name: " << joint_name_ << std::endl;
 
   // setup joint control pid to control joint
   if (_sdf->HasElement("joint_control_pid"))
@@ -178,6 +179,7 @@ void GazeboMotorModel::OnUpdate(const common::UpdateInfo& _info) {
   prev_sim_time_ = _info.simTime.Double();
   UpdateForcesAndMoments();
   UpdateMotorFail();
+  std::cout << "everything is working ..................." << std::endl;
   Publish();
 }
 
@@ -199,6 +201,8 @@ void GazeboMotorModel::UpdateForcesAndMoments() {
   }
   double real_motor_velocity = motor_rot_vel_ * rotor_velocity_slowdown_sim_;
   double force = real_motor_velocity * std::abs(real_motor_velocity) * motor_constant_;
+  // gzmsg << "rpm:" << (int32_t)(motor_rot_vel_ * 9.54929658551) << "rpm real: " << (int32_t)(real_motor_velocity  * 9.54929658551)<< std::endl;
+  // gzmsg << "motor " << motor_number_ <<  "motor_rot_vel_: " << motor_rot_vel_ << ", real_motor_velocity: " << real_motor_velocity << ", force: " << force << std::endl;
   if(!reversible_) {
     // Not allowed to have negative thrust.
     force = std::abs(force);

@@ -77,6 +77,7 @@ void MavlinkInterface::Load()
 
   if (serial_enabled_) {
     // Set up serial interface
+    printf(" series connections is enabled");
 	  io_service_.post(std::bind(&MavlinkInterface::do_serial_read, this));
 
     // run io_service for async io
@@ -86,6 +87,7 @@ void MavlinkInterface::Load()
     open_serial();
 
   } else {
+    // printf("series connection is not connected:");
     memset((char *)&remote_simulator_addr_, 0, sizeof(remote_simulator_addr_));
     remote_simulator_addr_.sin_family = AF_INET;
     remote_simulator_addr_len_ = sizeof(remote_simulator_addr_);
@@ -95,7 +97,7 @@ void MavlinkInterface::Load()
     local_simulator_addr_len_ = sizeof(local_simulator_addr_);
 
     if (use_tcp_) {
-
+      // printf("tcp use in mavlink intergace amit..................\n");
       local_simulator_addr_.sin_addr.s_addr = htonl(mavlink_addr_);
       local_simulator_addr_.sin_port = htons(mavlink_tcp_port_);
 
@@ -212,6 +214,7 @@ void MavlinkInterface::SendSensorMessages(uint64_t time_usec) {
 void MavlinkInterface::SendHeartbeat() {
   // In order to start the mavlink instance on Pixhawk over USB, we need to send heartbeats.
   if (hil_mode_) {
+    // std::cout << "sending the heartbeat... .. .. \n";
     mavlink_message_t msg;
     mavlink_msg_heartbeat_pack_chan(
       1, 200,
@@ -275,6 +278,7 @@ void MavlinkInterface::SendSensorMessages(uint64_t time_usec, HILData &hil_data)
 
   if (!hil_mode_ || (hil_mode_ && !hil_state_level_)) {
     mavlink_message_t msg;
+    // printf("sending sensor message\n");
     mavlink_msg_hil_sensor_encode_chan(1, 200, MAVLINK_COMM_0, &msg, &sensor_msg);
     send_mavlink_message(&msg);
   }

@@ -560,11 +560,12 @@ void GazeboMavlinkInterface::OnUpdate(const common::UpdateInfo&  /*_info*/) {
   if (previous_imu_seq_ > 0) {
     while (previous_imu_seq_ == last_imu_message_.seq() && IsRunning()) {
       last_imu_message_cond_.wait_for(lock, std::chrono::milliseconds(10));
+      // gzmsg<< "waited for imu message to change for 10 millisecongs " << "\n";
     }
   }
 
   previous_imu_seq_ = last_imu_message_.seq();
-
+  // gzmsg << "previous imu sequence: " << previous_imu_seq_ << "\n";
   // Always run at 250 Hz. At 500 Hz, the skip factor should be 2, at 1000 Hz 4.
   if (!(previous_imu_seq_ % update_skip_factor_ == 0)) {
     return;
@@ -1230,12 +1231,15 @@ void GazeboMavlinkInterface::sendMotorspeeds()
       esc_status.time_usec = std::llround(world_->GetSimTime().Double() * 1e6);
   #endif
 
+  // gzmsg << "current time : "<< esc_status.time_usec <<  "\n";
+
   int max_escs = sizeof(esc_status.rpm) / sizeof(esc_status.rpm[0]);
 
   for (int i = 0; i < rotor_joints_.size() && i < max_escs; i++) {
       if (rotor_joints_[i]) {
           // Convert to RPM: (rad/s) * (60 / 2pi)
           double rad_s = rotor_joints_[i]->GetVelocity(0);
+          // gzmsg << "Rotor " << i << " velocity (rad/s): " << rad_s << "\n";
           esc_status.rpm[i] = (int32_t)(rad_s * 9.54929658551);
 
       } else {
